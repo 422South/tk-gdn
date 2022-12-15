@@ -64,23 +64,23 @@ class SceneOperation(HookClass):
         gdn = self.parent.engine.gdn
 
         if operation == "current_path":
-            # file_obj = gdn.app.project.file
-            # if file_obj != None:
-            #     return file_obj.fsName
-            return ""
+            working_directory = gdn.Workspace.getWorking_directory()
+            return working_directory
 
         elif operation == "open":
             pass
             # open the specified script
-            # gdn.app.open(file_path)
+            gdn.SceneIOManager.Open(file_path)
 
         elif operation == "save":
             pass
-            # gdn.app.project.save()
+            current_file_path = gdn.Workspace.getCurrent_scenefile()
+            if current_file_path != "":
+                gdn.SceneIOManager.SaveAs(current_file_path)
 
         elif operation == "save_as":
             pass
-            # gdn.app.project.save(adobe.File(file_path))
+            gdn.SceneIOManager.SaveAs(file_path)
 
         elif operation == "reset":
             # gdn.app.project.close(adobe.CloseOptions.DO_NOT_SAVE_CHANGES)

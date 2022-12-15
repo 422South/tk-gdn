@@ -565,9 +565,9 @@ class GDNEngine(sgtk.platform.Engine):
         # handling stdout and logging it.
         else:
 
-            # we don't use the handler's format method here because the adobe
+            # we don't use the handler's format method here because the gdn
             # side expects a certain format.
-            msg_str = "[%s]: %s" % (record.levelname, record.message)
+            msg_str = "[%s]: %s\n" % (record.levelname, record.message)
 
             sys.stdout.write(msg_str)
             sys.stdout.flush()
@@ -727,6 +727,9 @@ class GDNEngine(sgtk.platform.Engine):
         self.logger.debug("_run_tests Get string_field result: %s" % result)
         result = self.gdn.WrapperTestClass.TestArgs1("TestString", 55)
         self.logger.debug("_run_tests Called TestArgs1 result: %s " % result)
+        self.gdn.WrapperTestClass.string_field = "New Value"
+        result = self.gdn.WrapperTestClass.string_field
+        self.logger.debug("_run_tests Get string_field result: %s" % result)
 
         # """
         # Runs the test suite for the tk-aftereffects bundle.
