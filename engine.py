@@ -332,12 +332,8 @@ class GDNEngine(sgtk.platform.Engine):
         :returns: The current project path or an empty string
         :rtype: str
         """
-        # doc_obj = self.gdn.app.project.file
-        doc_path = ""
-        # doc_obj will always be a ProxyWrapper instance so we cannot
-        # use the `doc_obj is not None` comparison
-        # if doc_obj != None:
-        #     doc_path = doc_obj.fsName
+        doc_path = self.gdn.Workspace.get_current_scene_path()
+
         return doc_path
 
     def save(self, path=None):
@@ -350,11 +346,11 @@ class GDNEngine(sgtk.platform.Engine):
         with self.context_changes_disabled():
 
             if path is None:
-                self.gdn.app.project.save()
+                self.gdn.Workspace.save()
             else:
-                # After Effects won't ensure that the folder is created when saving, so we must make sure it exists
+                # When saving, so we must make sure it exists
                 ensure_folder_exists(os.path.dirname(path))
-                self.gdn.app.project.save(self.gdn.File(path))
+                self.gdn.Workspace.save_as(path)
             new_path = self.project_path
             self.logger.info("Saved file to to {!r}".format(new_path))
 

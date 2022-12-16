@@ -115,7 +115,7 @@ class GDNSceneCollector(HookBaseClass):
         project_name = "Untitled"
         path = self.parent.engine.project_path
         if path:
-            project_name = "ProjectName"  #self.parent.engine.gdn.Workfiles.getCurrent_scenefile()
+            project_name = self.parent.engine.gdn.Workspace.getCurrent_scene_name()
         project_item = parent_item.create_item(
             "aftereffects.project", "GDN Scene", project_name
         )
@@ -156,7 +156,7 @@ class GDNSceneCollector(HookBaseClass):
         :returns: the newly created comp item
         """
         # create a publish item for the document
-        comp_item = parent_item.create_item("gdn.session", comment, name)
+        comp_item = parent_item.create_item("gdn.project", comment, name)
 
         comp_item.set_icon_from_path(self.__icon_path())
 

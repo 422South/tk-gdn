@@ -68,25 +68,24 @@ class SceneOperation(HookClass):
             return working_directory
 
         elif operation == "open":
-            pass
             # open the specified script
             gdn.SceneIOManager.Open(file_path)
 
         elif operation == "save":
-            pass
-            current_file_path = gdn.Workspace.getCurrent_scenefile()
-            if current_file_path != "":
-                gdn.SceneIOManager.SaveAs(current_file_path)
+            current_file_name = gdn.Workspace.getCurrent_scenefile()
+            working_directory = gdn.Workspace.getWorking_directory()
+            scenes_directory = gdn.Workspace.getScenes_directory()
+            if current_file_name != "":
+                gdn.SceneIOManager.SaveAs(os.path.join(working_directory, scenes_directory, current_file_name))
 
         elif operation == "save_as":
-            pass
             gdn.SceneIOManager.SaveAs(file_path)
 
         elif operation == "reset":
-            # gdn.app.project.close(adobe.CloseOptions.DO_NOT_SAVE_CHANGES)
-            # gdn.app.newProject()
+            gdn.Workspace.reset_project()
             return True
 
         elif operation == "prepare_new":
-            # gdn.app.newProject()
-            pass
+            raise TankError("prepare_new not implemented")
+            # gdn.Workspace.reset_project()
+

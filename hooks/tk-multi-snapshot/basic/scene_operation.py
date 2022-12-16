@@ -8,7 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 from sgtk import Hook
-
+import os
 
 class SceneOperation(Hook):
     """
@@ -36,17 +36,19 @@ class SceneOperation(Hook):
 
         if operation == "current_path":
             pass
-            # file_obj = gdn.app.project.file
-            # if file_obj != None:
-            #     return file_obj.fsName
-            # raise TankError("The active document must be saved!")
+            working_directory = gdn.Workspace.get_current_scene_path()
+            if working_directory != "":
+                return working_directory
+            raise TankError("The active document must be saved!")
 
         elif operation == "open":
             pass
-            # gdn.app.project.close(adobe.CloseOptions.DO_NOT_SAVE_CHANGES)
-            # gdn.app.open(adobe.File(file_path))
+            gdn.Workspace.open(file_path)
 
         elif operation == "save":
             pass
-            # save the current script
-            # gdn.app.project.save()
+            current_file_name = gdn.Workspace.getCurrent_scenefile()
+            working_directory = gdn.Workspace.getWorking_directory()
+            # scenes_directory = gdn.Workspace.getScenes_directory()
+            if current_file_name != "":
+                gdn.Workspace.save_as(os.path.join(working_directory, "snapshot", current_file_name))

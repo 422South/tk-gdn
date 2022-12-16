@@ -20,9 +20,9 @@ class ProjectUnsavedError(Exception):
     pass
 
 
-class AfterEffectsProjectPublishPlugin(HookBaseClass):
+class GDNProjectPublishPlugin(HookBaseClass):
     """
-    Plugin for publishing an after effects project.
+    Plugin for publishing an GDN project.
 
     This hook relies on functionality found in the base file publisher hook in
     the publish2 app and should inherit from it in the configuration. The hook
@@ -106,10 +106,10 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         """
 
         # inherit the settings from the base publish plugin
-        base_settings = super(AfterEffectsProjectPublishPlugin, self).settings or {}
+        base_settings = super(GDNProjectPublishPlugin, self).settings or {}
 
         # settings specific to this class
-        aftereffects_publish_settings = {
+        gdn_publish_settings = {
             "Publish Template": {
                 "type": "template",
                 "default": None,
@@ -120,7 +120,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         }
 
         # update the base settings
-        base_settings.update(aftereffects_publish_settings)
+        base_settings.update(gdn_publish_settings)
 
         return base_settings
 
@@ -133,7 +133,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         accept() method. Strings can contain glob patters such as *, for example
         ["maya.*", "file.maya"]
         """
-        return ["aftereffects.project"]
+        return ["gdn.project"]
 
     def accept(self, settings, item):
         """
@@ -171,11 +171,11 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
             # provide a save button. the project will need to be saved before
             # validation will succeed.
             self.logger.warn(
-                "The After Effects project has not been saved.",
+                "The GDN project has not been saved.",
                 extra=self.__get_save_as_action(),
             )
 
-        self.logger.info("After Effects '%s' plugin accepted." % (self.name,))
+        self.logger.info("GDN '%s' plugin accepted." % (self.name,))
         return {"accepted": True, "checked": True}
 
     def validate(self, settings, item):
@@ -199,7 +199,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         if not path:
             # the project still requires saving. provide a save button.
             # validation fails.
-            error_msg = "The After Effects project '%s' has not been saved." % (
+            error_msg = "The GDN project '%s' has not been saved." % (
                 item.name,
             )
             self.logger.error(error_msg, extra=self.__get_save_as_action())
@@ -224,7 +224,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
                     extra={
                         "action_button": {
                             "label": "Save File",
-                            "tooltip": "Save the current After Effects project"
+                            "tooltip": "Save the current GDN project"
                             "to a different file name",
                             # will launch wf2 if configured
                             "callback": self.__get_save_as_action(),
@@ -282,7 +282,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # run the base class validation
-        return super(AfterEffectsProjectPublishPlugin, self).validate(settings, item)
+        return super(GDNProjectPublishPlugin, self).validate(settings, item)
 
     def publish(self, settings, item):
         """
@@ -304,10 +304,10 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
 
         # update the item with the saved project path
         item.properties["path"] = path
-        item.properties["publish_type"] = "After Effects Project"
+        item.properties["publish_type"] = "GDN Scene"
 
         # let the base class register the publish
-        super(AfterEffectsProjectPublishPlugin, self).publish(settings, item)
+        super(GDNProjectPublishPlugin, self).publish(settings, item)
 
         published_renderings = item.properties.get("published_renderings", [])
         published_renderings.insert(0, item.properties.get("sg_publish_data"))
@@ -324,7 +324,7 @@ class AfterEffectsProjectPublishPlugin(HookBaseClass):
         """
 
         # do the base class finalization
-        super(AfterEffectsProjectPublishPlugin, self).finalize(settings, item)
+        super(GDNProjectPublishPlugin, self).finalize(settings, item)
 
         path = item.properties["path"]
 
