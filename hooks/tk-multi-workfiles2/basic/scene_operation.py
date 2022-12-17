@@ -69,17 +69,17 @@ class SceneOperation(HookClass):
 
         elif operation == "open":
             # open the specified script
-            gdn.SceneIOManager.Open(file_path)
+            gdn.Workspace.open(file_path)
 
         elif operation == "save":
             current_file_name = gdn.Workspace.getCurrent_scenefile()
             working_directory = gdn.Workspace.getWorking_directory()
             scenes_directory = gdn.Workspace.getScenes_directory()
             if current_file_name != "":
-                gdn.SceneIOManager.SaveAs(os.path.join(working_directory, scenes_directory, current_file_name))
+                gdn.Workspace.save_as(os.path.join(working_directory, scenes_directory, current_file_name))
 
         elif operation == "save_as":
-            gdn.SceneIOManager.SaveAs(file_path)
+            gdn.Workspace.save_as(file_path)
 
         elif operation == "reset":
             gdn.Workspace.reset_project()

@@ -222,7 +222,7 @@ class GDNEngine(sgtk.platform.Engine):
 
         if file_to_open:
             # open the specified script
-            self.gdn.app.open(file_to_open)
+            self.gdn.Workspace.open(file_to_open)
             # clear the environment variable after loading so that it doesn't get reopened on an engine restart.
             del os.environ["SGTK_FILE_TO_OPEN"]
 

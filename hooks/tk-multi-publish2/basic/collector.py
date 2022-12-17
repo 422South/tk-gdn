@@ -81,11 +81,11 @@ class GDNSceneCollector(HookBaseClass):
 
         render_paths = []
         comment = "Test Comment"
-        comp_item_name = "CompItemName"
+        item_name = "Scene File"
 
-        self.__create_comp_publish_item(
+        self.__create_publish_item(
             parent_item,
-            comp_item_name,
+            item_name,
             comment,
             render_paths,
             work_template,
@@ -96,7 +96,7 @@ class GDNSceneCollector(HookBaseClass):
         #     )
 
     def __icon_path(self):
-        return os.path.join(self.disk_location, os.pardir, "icons", "aftereffects.png")
+        return os.path.join(self.disk_location, os.pardir, "icons", "gdn_icon.png")
 
     def __get_work_template_for_item(self, settings):
         # try to get the work-template
@@ -115,7 +115,7 @@ class GDNSceneCollector(HookBaseClass):
         project_name = "Untitled"
         path = self.parent.engine.project_path
         if path:
-            project_name = self.parent.engine.gdn.Workspace.getCurrent_scene_name()
+            project_name = self.parent.engine.gdn.Workspace.getCurrent_scenefile()
         project_item = parent_item.create_item(
             "aftereffects.project", "GDN Scene", project_name
         )
@@ -134,7 +134,7 @@ class GDNSceneCollector(HookBaseClass):
             self.logger.debug("Work template defined for GDN collection.")
         return project_item
 
-    def __create_comp_publish_item(
+    def __create_publish_item(
         self,
         parent_item,
         name,
@@ -148,38 +148,36 @@ class GDNSceneCollector(HookBaseClass):
         :param parent_item: Root item instance
         :param name: str name of the new item
         :param comment: str comment/subtitle of the comp item
-        :param queue_item: adobe.RenderQueueItem item to be associated with the comp item
         :param render_paths: list-of-str. filepaths to be expected from the render queue item. Sequence-paths
                 should use the adobe-style sequence pattern [###]
-        :param queue_index: int. The number of the render queue item within the render queue. Index starting at 0!
         :param work_template: Template. The configured work template
         :returns: the newly created comp item
         """
         # create a publish item for the document
-        comp_item = parent_item.create_item("gdn.project", comment, name)
+        publish_item = parent_item.create_item("gdn.project", comment, name)
 
-        comp_item.set_icon_from_path(self.__icon_path())
+        publish_item.set_icon_from_path(self.__icon_path())
 
         # disable thumbnail creation for After Effects documents. for the
         # default workflow, the thumbnail will be auto-updated after the
         # version creation plugin runs
-        comp_item.thumbnail_enabled = False
-        comp_item.context_change_allowed = False
+        publish_item.thumbnail_enabled = False
+        publish_item.context_change_allowed = False
 
-        comp_item.properties["renderpaths"] = render_paths
+        publish_item.properties["renderpaths"] = render_paths
 
         # enable the rendered render queue items and expand it. other documents are
         # collapsed and disabled.
 
-        comp_item.expanded = True
-        comp_item.checked = True
+        publish_item.expanded = True
+        publish_item.checked = True
 
 
         for path in render_paths:
-            comp_item.set_thumbnail_from_path(path)
+            publish_item.set_thumbnail_from_path(path)
             break
 
         if work_template:
-            comp_item.properties["work_template"] = work_template
-            self.logger.debug("Work template defined for After Effects collection.")
-        return comp_item
+            publish_item.properties["work_template"] = work_template
+            self.logger.debug("Work template defined for GDN.")
+        return publish_item
