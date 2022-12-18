@@ -714,7 +714,7 @@ class GDNEngine(sgtk.platform.Engine):
         :return: nothing
         """
         self.logger.debug("Setting _WIN32_GDN_MAIN_HWND %s" % hwnd)
-        _WIN32_GDN_MAIN_HWND = hwnd
+        self._WIN32_GDN_MAIN_HWND = hwnd
 
     def _run_tests(self):
         result = self.gdn.WrapperTestClass.TestReturn1
