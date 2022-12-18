@@ -1050,9 +1050,11 @@ class GDNEngine(sgtk.platform.Engine):
                 win32_proxy_win.show()
 
                 try:
+                    # TODO this was originally class_name="Qt5QWindowIcon" which does not match the new reported sub version
                     proxy_win_hwnd_found = self.__tk_gdn.win_32_api.find_windows(
                         stop_if_found=True,
-                        class_name="Qt5QWindowIcon",
+                        class_name="Qt5153QWindowIcon",
+                        # window_title="ShotGrid Toolkit Parent Widget",
                         process_id=os.getpid(),
                     )
                 finally:
@@ -1062,7 +1064,7 @@ class GDNEngine(sgtk.platform.Engine):
                     proxy_win_hwnd = proxy_win_hwnd_found[0]
         else:
             self.logger.debug(
-                "Unable to determine the HWND of After Effects itself. This means "
+                "Unable to determine the HWND of GDN itself. This means "
                 "that we can't properly setup window parenting for Toolkit apps."
             )
 
@@ -1073,7 +1075,7 @@ class GDNEngine(sgtk.platform.Engine):
         if proxy_win_hwnd is None:
             self.logger.warning(
                 "Unable setup window parenting properly. Dialogs shown will "
-                "not be parented to After Effects, but they will still function "
+                "not be parented to GDN, but they will still function "
                 "properly otherwise."
             )
         else:
