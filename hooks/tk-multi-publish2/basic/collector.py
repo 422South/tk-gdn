@@ -54,6 +54,14 @@ class GDNSceneCollector(HookBaseClass):
                                "templates.yml. If configured, is made available"
                                "to publish plugins via the collected item's "
                                "properties. ",
+            }, "Render Sequence Template": {
+                "type": "template",
+                "default": None,
+                "description": "Template path for render files. Should "
+                               "correspond to a template defined in "
+                               "templates.yml. If configured, is made available"
+                               "to publish plugins via the collected item's "
+                               "properties. ",
             },
         }
 
@@ -80,22 +88,9 @@ class GDNSceneCollector(HookBaseClass):
 
         work_template = self.__get_work_template_for_item(settings)
 
-        render_paths = []
-
-        #
-        # comment = "GDN Render Files"
-        # item_name = "Render File"
-        #
-        # self.__create_publish_item(
-        #     parent_item,
-        #     item_name,
-        #     comment,
-        #     render_paths,
-        #     work_template,
-        # )
-
         self.collect_movies(parent_item, gdn.Workspace.getWorking_directory())
-        self.collect_renders(parent_item, gdn.Workspace.getWorking_directory())
+        self.collect_renders(gdn.Workspace.getWorking_directory(), settings, work_template, parent_item)
+        pass
 
     def __icon_path(self):
         return os.path.join(self.disk_location, os.pardir, "icons", "gdn_icon.png")
@@ -105,6 +100,12 @@ class GDNSceneCollector(HookBaseClass):
         work_template_setting = settings.get("Work Template")
         if work_template_setting:
             return self.parent.engine.get_template_by_name(work_template_setting.value)
+
+    def __get_render_collector_template_for_item(self, settings):
+        # try to get the work-template
+        render_collector_template_setting = settings.get("Render Sequence Template")
+        if render_collector_template_setting:
+            return self.parent.engine.get_template_by_name(render_collector_template_setting.value)
 
     def __get_project_publish_item(self, settings, parent_item):
         """
@@ -135,53 +136,6 @@ class GDNSceneCollector(HookBaseClass):
             project_item.properties["work_template"] = work_template
             self.logger.debug("Work template defined for GDN collection.")
         return project_item
-
-    def __create_publish_item(
-            self,
-            parent_item,
-            name,
-            comment,
-            render_paths,
-            work_template=None,
-    ):
-        """
-        Will create a comp publish item.
-
-        :param parent_item: Root item instance
-        :param name: str name of the new item
-        :param comment: str comment/subtitle of the comp item
-        :param render_paths: list-of-str. filepaths to be expected from the render queue item. Sequence-paths
-                should use the adobe-style sequence pattern [###]
-        :param work_template: Template. The configured work template
-        :returns: the newly created comp item
-        """
-        # create a publish item for the document
-        publish_item = parent_item.create_item("gdn.project", comment, name)
-
-        publish_item.set_icon_from_path(self.__icon_path())
-
-        # disable thumbnail creation for After Effects documents. for the
-        # default workflow, the thumbnail will be auto-updated after the
-        # version creation plugin runs
-        publish_item.thumbnail_enabled = False
-        publish_item.context_change_allowed = False
-
-        publish_item.properties["renderpaths"] = render_paths
-
-        # enable the rendered render queue items and expand it. other documents are
-        # collapsed and disabled.
-
-        publish_item.expanded = True
-        publish_item.checked = True
-
-        for path in render_paths:
-            publish_item.set_thumbnail_from_path(path)
-            break
-
-        if work_template:
-            publish_item.properties["work_template"] = work_template
-            self.logger.debug("Work template defined for GDN.")
-        return publish_item
 
     def collect_movies(self, parent_item, project_root):
         """
@@ -260,28 +214,59 @@ class GDNSceneCollector(HookBaseClass):
 
             # the item has been created. update the display name to include
             # the an indication of what it is and why it was collected
-            item.name = "%s (%s)" % (item.name, "playblast")
+            item.name = "%s (%s)" % (item.name, "movie render")
 
-    def collect_renders(self, parent_item, project_root):
+    def collect_renders(self, project_root, settings, work_template, parent_item):
         images_directory = self.parent.engine.gdn.Workspace.getImages_directory()
+        render_collector_template = self.__get_render_collector_template_for_item(settings)
+        entity_fields = work_template.get_fields(self.parent.engine.gdn.Workspace.get_current_scene_path())
+        if not render_collector_template:
+            self.logger.debug("Missing render collection template !! skipping render files")
+            return None
 
         if not images_directory:
             images_directory = "images"
 
         renders_directory = os.path.join(project_root, images_directory)
-        render_paths = glob.glob(renders_directory)
 
-        # for path in render_paths:
-        #
-        #     rendered_paths = glob.glob(path)
-        #
-        #     if rendered_paths:
-        #         self.__logger.debug("rendered_paths: %s" % rendered_paths)
-        #
-        #         normalised_path = sgtk.util.ShotgunPath.normalize(path)
-        #         seq_dir = os.path.dirname(normalised_path)
-        #         frame_sequences = publisher.util.get_frame_sequences(seq_dir)
-        #
-        #         for (seq_spec, seq_paths) in frame_sequences:
-        #             self.__logger.debug("Trying to match sequence %s" % seq_spec)
-        #             #TODO match version number
+        for root, dirs, files in os.walk(renders_directory, followlinks=False):
+            for dir in dirs:
+                normalised_path = sgtk.util.ShotgunPath.normalize(os.path.join(root, dir))
+                frame_sequences = self.parent.util.get_frame_sequences(normalised_path)
+                for (seq_spec, seq_paths) in frame_sequences:
+                    self.logger.info("Trying to match sequence %s" % seq_spec)
+                    validated = render_collector_template.validate(seq_spec)
+                    if not validated:
+                        self.logger.debug("Invalid sequence spec does not match collection template %s" % seq_spec)
+                        continue
+                    fields = render_collector_template.get_fields(seq_spec)
+                    entity_type = self.parent.context.entity.get('type')
+                    if entity_fields.get(entity_type) != fields.get(entity_type):
+                        self.logger.debug("Skipping Sequence spec does not match current %s %s %s" % (
+                            entity_type, seq_spec, entity_fields.get(entity_type)))
+                    if entity_fields.get('version') != fields.get('version'):
+                        self.logger.debug("Skipping Sequence spec does not match current version %s %s" % (
+                            seq_spec, entity_fields.get('version')))
+                        continue
+                    self.logger.info("Found Sequence  %s ... adding" % seq_spec)
+                    name = " %s - %s v%s" % (fields.get(entity_type), fields.get('name'), '{:0>3}'.format(fields.get('version')))
+                    comment = 'Rendered Sequence'
+                    # create a publish item for the document
+                    publish_item = parent_item.create_item("gdn.rendering", comment, name)
+
+                    publish_item.set_icon_from_path(self.__icon_path())
+
+                    # disable thumbnail creation for After Effects documents. for the
+                    # default workflow, the thumbnail will be auto-updated after the
+                    # version creation plugin runs
+                    publish_item.thumbnail_enabled = False
+                    publish_item.context_change_allowed = False
+                    # TODO look at publish rendering - can we remove the paths iterator
+                    publish_item.properties["renderpaths"] = [seq_spec]
+                    publish_item.expanded = True
+                    publish_item.checked = True
+                    if work_template is not None:
+                        publish_item.properties["work_template"] = work_template
+                    # publish_item.set_thumbnail_from_path(path)
+
+

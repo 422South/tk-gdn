@@ -150,14 +150,7 @@ class GDNRenderPublishPlugin(HookBaseClass):
         render_paths = item.properties.get("renderpaths", [])
 
         published_renderings = item.properties.get("published_renderings", [])
-        # we will register whatever paths
-        # are set in the render_queue item
         for each_path in render_paths:
-            # match = re.search(r"[\[]?([#@]+)[\]]?", each_path)
-            # if match:
-            #     each_path = each_path.replace(
-            #         match.group(0), "%0{}d".format(len(match.group(1)))
-            #     )
             item.properties["path"] = re.sub(r"[\[\]]", "", each_path)
             # item.properties["path"] = each_path
             super(GDNRenderPublishPlugin, self).publish(settings, item)

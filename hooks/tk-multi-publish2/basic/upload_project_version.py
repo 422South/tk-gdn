@@ -85,7 +85,7 @@ class GDNUploadProjectPlugin(HookBaseClass):
         accept() method. Strings can contain glob patters such as *, for example
         ["maya.*", "file.maya"]
         """
-        return ["gdn.project"]
+        return ["file.video"]
 
     def accept(self, settings, item):
         """
