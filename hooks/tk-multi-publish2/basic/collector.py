@@ -215,6 +215,7 @@ class GDNSceneCollector(HookBaseClass):
             # the item has been created. update the display name to include
             # the an indication of what it is and why it was collected
             item.name = "%s (%s)" % (item.name, "movie render")
+            item.properties['movie_path'] = movie_path
 
     def collect_renders(self, project_root, settings, work_template, parent_item):
         images_directory = self.parent.engine.gdn.Workspace.getImages_directory()
@@ -263,10 +264,14 @@ class GDNSceneCollector(HookBaseClass):
                     publish_item.context_change_allowed = False
                     # TODO look at publish rendering - can we remove the paths iterator
                     publish_item.properties["renderpaths"] = [seq_spec]
+                    # need this for the publish_file plugin to copy the individual files
+                    # rather than the path which is a sequence definition
+                    publish_item.properties["sequence_paths"] = seq_paths
                     publish_item.expanded = True
                     publish_item.checked = True
-                    if work_template is not None:
-                        publish_item.properties["work_template"] = work_template
+                    # Pass the collector template to the publisher
+                    if render_collector_template is not None:
+                        publish_item.properties["work_template"] = render_collector_template
                     # publish_item.set_thumbnail_from_path(path)
 
 

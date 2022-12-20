@@ -203,7 +203,9 @@ class GDNUploadProjectPlugin(HookBaseClass):
             the keys returned in the settings property. The values are `Setting`
             instances.
         :param item: Item to process
+
         """
+        pass
         return
 
     def finalize(self, settings, item):
@@ -218,15 +220,21 @@ class GDNUploadProjectPlugin(HookBaseClass):
         """
 
         path = item.properties["path"]
+        movie_path = item.properties['movie_path']
+        if not movie_path:
+            return
 
         # in case creating a shotgun version is enabled
         # we will create the shotgun version here
         version_data = {
+            'sg_path_to_movie': movie_path,
             "project": item.context.project,
             "code": os.path.basename(path),
             "description": item.description,
             "entity": self._get_version_entity(item),
             "sg_task": item.context.task,
+            'user': {'type': 'HumanUser', 'id': item.context.user['id']},
+
         }
 
         published_data = item.properties.get("sg_publish_data")
@@ -235,7 +243,9 @@ class GDNUploadProjectPlugin(HookBaseClass):
 
         # create the version
         self.logger.info("Creating version for review...")
-        self.parent.shotgun.create("Version", version_data)
+        result = self.parent.shotgun.create("Version", version_data)
+        self.parent.shotgun.upload('Version', result['id'], movie_path, 'sg_uploaded_movie')
+
 
     def _get_version_entity(self, item):
         """

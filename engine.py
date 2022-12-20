@@ -381,92 +381,6 @@ class GDNEngine(sgtk.platform.Engine):
         if path:
             self.save(path)
 
-    # def is_adobe_sequence(self, path):
-    #     """
-    #     Helper to query if an adobe-style render path is
-    #     describing a sequence.
-    #
-    #     The sequencepath must contain one of the following patterns in
-    #     order to be recognized::
-    #
-    #         ###
-    #         @@@
-    #         [###]
-    #         %0xd
-    #
-    #     :param str path: filepath to check
-    #     :returns: True if the path describes a sequence
-    #     :rtype: bool
-    #     """
-    #     if re.search(self.__IS_SEQUENCE_REGEX, path):
-    #         return True
-    #     return False
-
-    def check_sequence(self, path, queue_item):
-        """
-        Helper to query if all render files of a given queue item
-        are actually existing.
-
-        :param str path: filepath to check
-        :param queue_item: an after effects render queue item
-        :type queue_item: `adobe.RenderQueueItemObject`_
-        :returns: True if the path describes a sequence
-        :rtype: bool
-        """
-        for file_path, _ in self.get_render_files(path, queue_item):
-            if not os.path.exists(file_path):
-                return False
-        return True
-
-    def find_sequence_range(self, path):
-        """
-        Parses the file name in an attempt to determine the first and last
-        frame number of a sequence. This assumes some sort of common convention
-        for the file names, where the frame number is an integer at the end of
-        the basename, just ahead of the file extension, such as
-        ``file.0001.jpg``, or ``file_001.jpg``. We also check for input file names with
-        abstracted frame number tokens, such as ``file.####.jpg`` or ``file.%04d.jpg``.
-
-        :param str path: The file path to parse.
-
-        :returns: None if no range could be determined, otherwise (min, max)
-        :rtype: tuple or None
-        """
-        # This pattern will match the following at the end of a string and
-        # retain the frame number or frame token as group(1) in the resulting
-        # match object:
-        #
-        # 0001
-        # ####
-        # @@@@
-        # [####]
-        # %04d
-        #
-        # The number of digits or hashes does not matter; we match as many as
-        # exist.
-        frame_pattern = re.compile(r"(^|[\.\_\- ])[\[]?([0-9#@]+|[%]0\d+d)[\]]?$")
-        root, ext = os.path.splitext(path)
-        match = re.search(frame_pattern, root)
-
-        # If we did not match, we don't know how to parse the file name, or there
-        # is no frame number to extract.
-        if not match:
-            return None
-
-        # We need to get all files that match the pattern from disk so that we
-        # can determine what the min and max frame number is.
-        glob_path = "%s%s" % (re.sub(frame_pattern, r"\1*", root), ext,)
-        files = glob.glob(glob_path)
-
-        # Our pattern from above matches against the file root, so we need
-        # to chop off the extension at the end.
-        file_roots = [os.path.splitext(f)[0] for f in files]
-
-        # We know that the search will result in a match at this point, otherwise
-        # the glob wouldn't have found the file. We can search and pull group 1
-        # to get the integer frame number from the file root name.
-        frames = [int(re.search(frame_pattern, f).group(2)) for f in file_roots]
-        return (min(frames), max(frames))
 
     ############################################################################
     # RPC
@@ -718,14 +632,14 @@ class GDNEngine(sgtk.platform.Engine):
 
     def _run_tests(self):
         result = self.gdn.WrapperTestClass.TestReturn1
-        self.logger.debug("_run_tests Called TestReturn1 result: %s " % result())
+        self.logger.info("_run_tests Called TestReturn1 result: %s " % result())
         result = self.gdn.WrapperTestClass.string_field
-        self.logger.debug("_run_tests Get string_field result: %s" % result)
+        self.logger.info("_run_tests Get string_field result: %s" % result)
         result = self.gdn.WrapperTestClass.TestArgs1("TestString", 55)
-        self.logger.debug("_run_tests Called TestArgs1 result: %s " % result)
+        self.logger.info("_run_tests Called TestArgs1 result: %s " % result)
         self.gdn.WrapperTestClass.string_field = "New Value"
         result = self.gdn.WrapperTestClass.string_field
-        self.logger.debug("_run_tests Get string_field result: %s" % result)
+        self.logger.info("_run_tests Get string_field result: %s" % result)
 
         # """
         # Runs the test suite for the tk-aftereffects bundle.

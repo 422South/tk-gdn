@@ -74,7 +74,16 @@ class GDNRenderPublishPlugin(HookBaseClass):
 
         # inherit the settings from the base publish plugin
         base_settings = super(GDNRenderPublishPlugin, self).settings or {}
-
+        seq_publish_settings = {
+            "Publish Template": {
+                "type": "template",
+                "default": None,
+                "description": "Template path for published render sequence files. Should"
+                               "correspond to a template defined in "
+                               "templates.yml.",
+            },
+        }
+        base_settings.update(seq_publish_settings)
         return base_settings
 
     @property
@@ -148,12 +157,41 @@ class GDNRenderPublishPlugin(HookBaseClass):
         """
         item.properties["publish_type"] = "Rendered Image"
         render_paths = item.properties.get("renderpaths", [])
+        publish_template_setting = settings.get("Publish Template")
+        if not publish_template_setting:
+            error_msg = "A publish template must exist for this plugin to work"
+            self.logger.error(
+                error_msg,
+            )
+            raise Exception(error_msg)
+        publish_template = self.parent.engine.get_template_by_name(
+            publish_template_setting.value
+        )
 
         published_renderings = item.properties.get("published_renderings", [])
         for each_path in render_paths:
-            item.properties["path"] = re.sub(r"[\[\]]", "", each_path)
-            # item.properties["path"] = each_path
+            path = re.sub(r"[\[\]]", "", each_path)
+            item.properties["path"] = path
+            if publish_template:
+                item.properties["publish_template"] = publish_template
+            work_template = item.properties["work_template"]
+            if not work_template:
+                continue
+            # get the current scene path and extract fields from it using the work
+            work_fields = work_template.get_fields(path)
+            # template:
+
+            # include the camera name in the fields
+            # ensure the fields work for the publish template
+            missing_keys = publish_template.missing_keys(work_fields)
+            if missing_keys:
+                error_msg = "Work file '%s' missing keys required for the " \
+                            "publish template: %s" % (path, missing_keys)
+                self.logger.error(error_msg)
+                raise Exception(error_msg)
+
             super(GDNRenderPublishPlugin, self).publish(settings, item)
+
             published_renderings.append(item.properties.get("sg_publish_data"))
 
     def __is_acceptable(self, settings, item):
