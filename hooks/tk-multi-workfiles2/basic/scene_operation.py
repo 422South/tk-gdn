@@ -86,6 +86,6 @@ class SceneOperation(HookClass):
             return True
 
         elif operation == "prepare_new":
-            raise TankError("prepare_new not implemented")
-            # gdn.Workspace.reset_project()
+            # raise TankError("prepare_new not implemented")
+            gdn.Workspace.reset_project()
 

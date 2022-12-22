@@ -1619,9 +1619,8 @@ class GDNEngine(sgtk.platform.Engine):
 
         return """
             <a
-              href='#'
+              href='{url}'
               class='sg_value_link'
-              onclick='sg_panel.Panel.open_external_url("{url}")'
             >{text}</a>
             """.format(
             url=url, text=text,
