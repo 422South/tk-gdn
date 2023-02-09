@@ -1463,7 +1463,7 @@ class GDNEngine(sgtk.platform.Engine):
 
             # go ahead and forward the site thumbnail back to js
             data = dict(
-                thumb_path="../images/default_Site_thumb_dark.png",
+                thumb_path="./resource/Shotgrid/Server/ui/images/default_Site_thumb_dark.png",
                 url=self.sgtk.shotgun_url,
             )
             self.gdn.send_context_thumbnail(data)
@@ -1550,12 +1550,12 @@ class GDNEngine(sgtk.platform.Engine):
             # no image, use a default image based on the entity type
             else:
                 if context_entity["type"] in ["Asset", "Project", "Shot", "Task"]:
-                    thumb_path = "../images/default_%s_thumb_dark.png" % (
+                    thumb_path = "./resource/Shotgrid/Server/ui/images/default_%s_thumb_dark.png" % (
                         context_entity["type"]
                     )
                     data["thumb_path"] = thumb_path
                 else:
-                    thumb_path = "../images/default_Entity_thumb_dark.png"
+                    thumb_path = "./resource/Shotgrid/Server/ui/images/default_Entity_thumb_dark.png"
 
                 data = dict(
                     thumb_path=thumb_path, url=self.get_entity_url(context_entity),

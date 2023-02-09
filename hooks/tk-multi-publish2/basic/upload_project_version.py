@@ -193,7 +193,7 @@ class GDNUploadProjectPlugin(HookBaseClass):
         # phase.
         item.name = os.path.basename(path)
         item.properties["path"] = path
-        return True
+        return super(GDNUploadProjectPlugin, self).validate(settings, item)
 
     def publish(self, settings, item):
         """

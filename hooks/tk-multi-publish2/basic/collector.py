@@ -218,9 +218,10 @@ class GDNSceneCollector(HookBaseClass):
             item.properties['movie_path'] = movie_path
 
     def collect_renders(self, project_root, settings, work_template, parent_item):
-        images_directory = self.parent.engine.gdn.Workspace.getImages_directory()
+        publisher = self.parent
+        images_directory = publisher.engine.gdn.Workspace.getImages_directory()
         render_collector_template = self.__get_render_collector_template_for_item(settings)
-        entity_fields = work_template.get_fields(self.parent.engine.gdn.Workspace.get_current_scene_path())
+        entity_fields = work_template.get_fields(publisher.engine.gdn.Workspace.get_current_scene_path())
         if not render_collector_template:
             self.logger.debug("Missing render collection template !! skipping render files")
             return None
@@ -233,7 +234,7 @@ class GDNSceneCollector(HookBaseClass):
         for root, dirs, files in os.walk(renders_directory, followlinks=False):
             for dir in dirs:
                 normalised_path = sgtk.util.ShotgunPath.normalize(os.path.join(root, dir))
-                frame_sequences = self.parent.util.get_frame_sequences(normalised_path)
+                frame_sequences = publisher.util.get_frame_sequences(normalised_path)
                 for (seq_spec, seq_paths) in frame_sequences:
                     self.logger.info("Trying to match sequence %s" % seq_spec)
                     validated = render_collector_template.validate(seq_spec)
@@ -241,7 +242,7 @@ class GDNSceneCollector(HookBaseClass):
                         self.logger.debug("Invalid sequence spec does not match collection template %s" % seq_spec)
                         continue
                     fields = render_collector_template.get_fields(seq_spec)
-                    entity_type = self.parent.context.entity.get('type')
+                    entity_type = publisher.context.entity.get('type')
                     if entity_fields.get(entity_type) != fields.get(entity_type):
                         self.logger.debug("Skipping Sequence spec does not match current %s %s %s" % (
                             entity_type, seq_spec, entity_fields.get(entity_type)))
@@ -253,22 +254,20 @@ class GDNSceneCollector(HookBaseClass):
                     name = " %s - %s v%s" % (fields.get(entity_type), fields.get('name'), '{:0>3}'.format(fields.get('version')))
                     comment = 'Rendered Sequence'
                     # create a publish item for the document
-                    publish_item = parent_item.create_item("gdn.rendering", comment, name)
+                    # publish_item = parent_item.create_item("gdn.rendering", comment, name)
+                    publish_item = super(GDNSceneCollector, self)._collect_file(
+                        parent_item, seq_paths[0], frame_sequence=True
+                    )
 
                     publish_item.set_icon_from_path(self.__icon_path())
 
-                    # disable thumbnail creation for After Effects documents. for the
-                    # default workflow, the thumbnail will be auto-updated after the
-                    # version creation plugin runs
-                    publish_item.thumbnail_enabled = False
-                    publish_item.context_change_allowed = False
-                    # TODO look at publish rendering - can we remove the paths iterator
-                    publish_item.properties["renderpaths"] = [seq_spec]
-                    # need this for the publish_file plugin to copy the individual files
-                    # rather than the path which is a sequence definition
                     publish_item.properties["sequence_paths"] = seq_paths
-                    publish_item.expanded = True
-                    publish_item.checked = True
+                    publish_name = "%s_%s" % (
+                        "GDN", publisher.util.get_publish_name(seq_paths[0], sequence=True))
+                    publish_item.properties["publish_name"] = publish_name
+                    publish_item.name = "%s (Render Layer)" % publish_name
+                    publish_item.properties["publish_version"] = fields.get('version')
+
                     # Pass the collector template to the publisher
                     if render_collector_template is not None:
                         publish_item.properties["work_template"] = render_collector_template

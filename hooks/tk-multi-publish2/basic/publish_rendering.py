@@ -26,8 +26,6 @@ class GDNRenderPublishPlugin(HookBaseClass):
 
     """
 
-    REJECTED, FULLY_ACCEPTED = range(2)
-
     @property
     def description(self):
         """
@@ -95,7 +93,7 @@ class GDNRenderPublishPlugin(HookBaseClass):
         accept() method. Strings can contain glob patters such as *, for example
         ["maya.*", "file.maya"]
         """
-        return ["gdn.rendering"]
+        return ["file.*"]
 
     def accept(self, settings, item):
         """
@@ -122,10 +120,7 @@ class GDNRenderPublishPlugin(HookBaseClass):
 
         :returns: dictionary with boolean keys accepted, required and enabled
         """
-        if self.__is_acceptable(settings, item) is self.REJECTED:
-            return {"accepted": False}
-
-        return {"accepted": True, "checked": True}
+        return super(GDNRenderPublishPlugin, self).accept(settings, item)
 
     def validate(self, settings, item):
         """
@@ -140,23 +135,31 @@ class GDNRenderPublishPlugin(HookBaseClass):
 
         :returns: True if item is valid, False otherwise.
         """
-        if self.__is_acceptable(settings, item) is not self.FULLY_ACCEPTED:
+        if item.type != "file.image.sequence":
+            return super(GDNRenderPublishPlugin, self).validate(settings, item)
+
+        project_path = sgtk.util.ShotgunPath.normalize(self.parent.engine.project_path)
+        if not project_path:
+            self.logger.warn(
+                "Project has to be saved in order to allow publishing renderings",
+                extra=self.__get_save_as_action(),
+            )
             return False
 
-        # run the base class validation
-        return super(GDNRenderPublishPlugin, self).validate(settings, item)
+        work_template = item.properties.get("work_template")
 
-    def publish(self, settings, item):
-        """
-        Executes the publish logic for the given item and settings.
 
-        :param settings: Dictionary of Settings. The keys are strings, matching
-            the keys returned in the settings property. The values are `Setting`
-            instances.
-        :param item: Item to process
-        """
-        item.properties["publish_type"] = "Rendered Image"
-        render_paths = item.properties.get("renderpaths", [])
+        # check if the current configuration has templates assigned
+        if (not work_template):
+            self.logger.warn(
+                (
+                    "Publishing renders is not "
+                    "supported without configured templates."
+                )
+            )
+            return False
+
+
         publish_template_setting = settings.get("Publish Template")
         if not publish_template_setting:
             error_msg = "A publish template must exist for this plugin to work"
@@ -168,17 +171,13 @@ class GDNRenderPublishPlugin(HookBaseClass):
             publish_template_setting.value
         )
 
-        published_renderings = item.properties.get("published_renderings", [])
-        for each_path in render_paths:
-            path = re.sub(r"[\[\]]", "", each_path)
-            item.properties["path"] = path
-            if publish_template:
-                item.properties["publish_template"] = publish_template
-            work_template = item.properties["work_template"]
-            if not work_template:
-                continue
+        if publish_template:
+            item.properties["publish_template"] = publish_template
+            # This is checked in validate
+            work_template = item.properties.get("work_template")
+
             # get the current scene path and extract fields from it using the work
-            work_fields = work_template.get_fields(path)
+            work_fields = work_template.get_fields(item.properties.path)
             # template:
 
             # include the camera name in the fields
@@ -189,52 +188,23 @@ class GDNRenderPublishPlugin(HookBaseClass):
                             "publish template: %s" % (path, missing_keys)
                 self.logger.error(error_msg)
                 raise Exception(error_msg)
+        # set the item path to some temporary value
 
-            super(GDNRenderPublishPlugin, self).publish(settings, item)
+        return super(GDNRenderPublishPlugin, self).validate(settings, item)
 
-            published_renderings.append(item.properties.get("sg_publish_data"))
-
-    def __is_acceptable(self, settings, item):
+    def publish(self, settings, item):
         """
-        This method is a helper to decide, whether the current publish item
-        is valid. it is called from the validate and the accept method.
+        Executes the publish logic for the given item and settings.
 
         :param settings: Dictionary of Settings. The keys are strings, matching
             the keys returned in the settings property. The values are `Setting`
             instances.
         :param item: Item to process
-
-        :returns: int indicating the acceptance-level. One of
-            REJECTED, PARTIALLY_ACCEPTED, FULLY_ACCEPTED
         """
+        if item.type == 'file.image.sequence':
+            item.properties["publish_type"] = "Rendered Image"
 
-        render_paths = item.properties.get("renderpaths")
-        work_template = item.properties.get("work_template")
-        project_path = sgtk.util.ShotgunPath.normalize(self.parent.engine.project_path)
-
-        # set the item path to some temporary value
-        for each_path in render_paths:
-            item.properties["path"] = re.sub(r"[\[\]]", "", each_path)
-            break
-
-        # check if the current configuration has templates assigned
-        if (not work_template):
-            self.logger.warn(
-                (
-                    "Publishing renders is not "
-                    "supported without configured templates."
-                )
-            )
-            return self.REJECTED
-
-        if not project_path:
-            self.logger.warn(
-                "Project has to be saved in order to allow publishing renderings",
-                extra=self.__get_save_as_action(),
-            )
-            return self.REJECTED
-
-        return self.FULLY_ACCEPTED
+        super(GDNRenderPublishPlugin, self).publish(settings, item)
 
     def __get_save_as_action(self):
         """
