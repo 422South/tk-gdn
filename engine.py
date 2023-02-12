@@ -16,7 +16,7 @@ import subprocess
 import sys
 import threading
 from contextlib import contextmanager
-
+import time
 import sgtk
 from sgtk.util.filesystem import ensure_folder_exists
 from tank_vendor import six
@@ -60,13 +60,10 @@ class GDNEngine(sgtk.platform.Engine):
     _PROJECT_CONTEXT = None
     _GDN_PID = None
     _POPUP_CACHE = None
-    _GDN_WIN32_DIALOG_WINDOW_CLASS = "#32770"  # TODO the windows window class name used by After Effects for modal dialogs
     __WIN32_GW_CHILD = 5
     _CONTEXT_CACHE_KEY = "gdn_context_cache"
 
     _HAS_CHECKED_CONTEXT_POST_LAUNCH = False
-
-    __IS_SEQUENCE_REGEX = re.compile(u"[\[]?([#@]+|[%]0\dd)[\]]?")
 
     ############################################################################
     # context changing
@@ -185,6 +182,9 @@ class GDNEngine(sgtk.platform.Engine):
 
         # keep a list of handles on the launched dialogs
         self.__qt_dialogs = []
+
+        self._task_selector = self.__tk_gdn.task_selector
+        self.__new_task_context = None
 
     def post_app_init(self):
         """
@@ -381,7 +381,6 @@ class GDNEngine(sgtk.platform.Engine):
         if path:
             self.save(path)
 
-
     ############################################################################
     # RPC
 
@@ -491,6 +490,7 @@ class GDNEngine(sgtk.platform.Engine):
 
         :returns: True if the context changed, False if it did not.
         """
+
         # If the config says to not change context on active document change, then
         # we don't do anything here.
         if not self.get_setting("automatic_context_switch"):
@@ -561,9 +561,33 @@ class GDNEngine(sgtk.platform.Engine):
                 )
 
             if context and context != self.context:
-                self.gdn.context_about_to_change()
-                sgtk.platform.change_context(context)
-                return True
+                if context.task:
+                    self.gdn.context_about_to_change()
+                    sgtk.platform.change_context(context)
+                    return True
+
+                if context.entity and context.entity['type'] != 'Project':
+                    '''
+                        Called by the dialog
+                    '''
+
+                    def handle_task_change(ctx):
+                        self.__new_task_context = ctx
+
+                    self.__new_task_context = None
+                    # we need to have a task and it can't be determined if the user directly loads a file
+                    self.show_modal("Please Select a Task", self, self._task_selector.ContextWidget,
+                                              context=context,
+                                              action=handle_task_change)
+                    if self.__new_task_context:
+                        self.gdn.context_about_to_change()
+                        sgtk.platform.change_context(self.__new_task_context)
+                        return True
+                    else:
+                        self.logger.warning("WARN: Context has no associated task!!")
+                    # self.gdn.context_about_to_change()
+                    # sgtk.platform.change_context(context)
+                    # return True
 
             return False
 

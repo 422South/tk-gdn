@@ -9,6 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import sgtk
+from . import task_selector
 
 gdn_bridge = sgtk.platform.import_framework(
     "tk-framework-gdn", "tk_framework_gdn.gdn_bridge"

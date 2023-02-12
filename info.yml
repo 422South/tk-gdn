@@ -62,3 +62,4 @@ requires_core_version: "v0.19.18"
 frameworks:
   - { "name": "tk-framework-shotgunutils", "version": "v5.x.x" }
   - { "name": "tk-framework-gdn", "version": "v1.x.x" }
+  - { "name": "tk-framework-qtwidgets", "version": "v2.x.x" }
