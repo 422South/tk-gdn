@@ -9,7 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
-import pathlib
+# import pathlib
 import sys
 
 import sgtk
@@ -47,7 +47,7 @@ class GDNLauncher(SoftwareLauncher):
     #
     EXECUTABLE_MATCH_TEMPLATES = [
         {
-            "win32": os.path.join(pathlib.Path.home(),
+            "win32": os.path.join(os.path.expanduser("~"),
                                   "AppData/Roaming",
                                   "422 Global Data Navigator/{version}/422GlobalDataNavigator-{version_back}.exe"),
         },
